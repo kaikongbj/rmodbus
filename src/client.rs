@@ -1,6 +1,7 @@
 use crate::consts::{
     MODBUS_GET_COILS, MODBUS_GET_DISCRETES, MODBUS_GET_HOLDINGS, MODBUS_GET_INPUTS,
-    MODBUS_SET_COIL, MODBUS_SET_COILS_BULK, MODBUS_SET_HOLDING, MODBUS_SET_HOLDINGS_BULK,
+    MODBUS_GET_SET_HOLDINGS_BULK, MODBUS_SET_COIL, MODBUS_SET_COILS_BULK, MODBUS_SET_HOLDING,
+    MODBUS_SET_HOLDINGS_BULK,
 };
 use crate::{calc_crc16, calc_lrc, ErrorKind, ModbusFrameBuf, ModbusProto, VectorTrait};
 
@@ -16,6 +17,8 @@ pub struct ModbusRequest {
     pub func: u8,
     pub reg: u16,
     pub count: u16,
+    pub write_reg: u16,
+    pub write_count: u16,
     pub proto: ModbusProto,
 }
 
@@ -28,6 +31,8 @@ impl ModbusRequest {
             func: 0,
             reg: 0,
             count: 0,
+            write_reg: 0,
+            write_count: 0,
             proto,
         }
     }
@@ -39,6 +44,8 @@ impl ModbusRequest {
             func: 0,
             reg: 0,
             count: 0,
+            write_reg: 0,
+            write_count: 0,
             proto: ModbusProto::TcpUdp,
         }
     }
@@ -78,7 +85,32 @@ impl ModbusRequest {
         self.func = MODBUS_GET_HOLDINGS;
         self.generate(&[], request)
     }
-
+    pub fn generate_rw_holdings<V: VectorTrait<u8>>(
+        &mut self,
+        read_reg: u16,
+        read_count: u16,
+        write_reg: u16,
+        write_count: u16,
+        values: &[u16],
+        request: &mut V,
+    ) -> Result<(), ErrorKind> {
+        if values.len() > 125 {
+            return Err(ErrorKind::OOB);
+        }
+        self.reg = read_reg;
+        self.count = read_count;
+        self.write_reg = write_reg;
+        self.write_count = write_count;
+        self.func = MODBUS_GET_SET_HOLDINGS_BULK;
+        let mut data: ModbusFrameBuf = [0; 256];
+        let mut pos = 0;
+        for v in values {
+            data[pos] = (v >> 8) as u8;
+            data[pos + 1] = *v as u8;
+            pos += 2;
+        }
+        self.generate(&data[..values.len() * 2], request)
+    }
     pub fn generate_get_inputs<V: VectorTrait<u8>>(
         &mut self,
         reg: u16,
@@ -428,6 +460,15 @@ impl ModbusRequest {
                 }
                 #[allow(clippy::cast_possible_truncation)]
                 request.push(l as u8)?;
+                for v in data {
+                    request.push(*v)?;
+                }
+            }
+            MODBUS_GET_SET_HOLDINGS_BULK => {
+                request.extend(&self.count.to_be_bytes())?;
+                request.extend(&self.write_reg.to_be_bytes())?;
+                request.extend(&self.write_count.to_be_bytes())?;
+                request.push(data.len() as u8)?;
                 for v in data {
                     request.push(*v)?;
                 }
