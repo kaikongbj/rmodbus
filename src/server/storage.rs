@@ -1,12 +1,13 @@
-use super::{
-    super::{ErrorKind, VectorTrait},
-    context::ModbusContext,
-};
 #[cfg(feature = "with_bincode")]
 use bincode::{Decode, Encode};
 use ieee754::Ieee754;
 #[cfg(feature = "with_serde")]
 use serde::{Deserialize, Serialize};
+
+use super::{
+    context::ModbusContext,
+    super::{ErrorKind, VectorTrait},
+};
 
 pub const SMALL_STORAGE_SIZE: usize = 1_000;
 pub const FULL_STORAGE_SIZE: usize = 10_000;
@@ -533,5 +534,13 @@ impl<const C: usize, const D: usize, const I: usize, const H: usize> ModbusConte
     #[inline]
     fn set_holdings_from_f32(&mut self, reg: u16, value: f32) -> Result<(), ErrorKind> {
         self.set_holdings_from_u32(reg, value.bits())
+    }
+
+    fn get_file_record_as_u8(&self, reg: u16) -> Result<u8, ErrorKind> {
+        todo!()
+    }
+
+    fn set_file_record_as_u8(&self, reg: u16) -> Result<u8, ErrorKind> {
+        todo!()
     }
 }

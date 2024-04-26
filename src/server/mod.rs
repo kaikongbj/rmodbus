@@ -1,11 +1,11 @@
-pub mod context;
-pub mod storage;
-
 use core::slice;
 
+use crate::{calc_crc16, calc_lrc, ErrorKind, ModbusProto, VectorTrait};
 #[allow(clippy::wildcard_imports)]
 use crate::consts::*;
-use crate::{calc_crc16, calc_lrc, ErrorKind, ModbusProto, VectorTrait};
+
+pub mod context;
+pub mod storage;
 
 /// Modbus frame processor
 ///
@@ -129,7 +129,7 @@ impl<'a, V: VectorTrait<u8>> ModbusFrame<'a, V> {
                     return Err(ErrorKind::OOB);
                 }
                 #[allow(clippy::cast_possible_truncation)]
-                let crc = calc_crc16(self.response.as_slice(), len as u8);
+                    let crc = calc_crc16(self.response.as_slice(), len as u8);
                 self.response.extend(&crc.to_le_bytes())
             }
             ModbusProto::Ascii => {
@@ -138,7 +138,7 @@ impl<'a, V: VectorTrait<u8>> ModbusFrame<'a, V> {
                     return Err(ErrorKind::OOB);
                 }
                 #[allow(clippy::cast_possible_truncation)]
-                let lrc = calc_lrc(self.response.as_slice(), len as u8);
+                    let lrc = calc_lrc(self.response.as_slice(), len as u8);
                 self.response.push(lrc)
             }
             ModbusProto::TcpUdp => Ok(()),
@@ -408,6 +408,106 @@ impl<'a, V: VectorTrait<u8>> ModbusFrame<'a, V> {
                 } else {
                     Ok(())
                 }
+            }
+            MODBUS_GET_SET_HOLDINGS_BULK => {
+                if self.count > 0 {
+                    let data_len = self.count << 1;
+                    tcp_response_set_data_len!(self, data_len + 3);
+                    // 2b unit and func
+                    self.response
+                        .extend(&self.buf[self.frame_start..self.frame_start + 2])?;
+                    if data_len > u16::from(u8::MAX) {
+                        return Err(ErrorKind::OOB);
+                    }
+                    #[allow(clippy::cast_possible_truncation)]
+                    // 1b data len
+                    self.response.push(data_len as u8)?;
+                }
+                Ok(())
+            }
+            MODBUS_MASK_WRITE_HOLDING_BULK => {
+                if self.count > 0 {
+                    let data_len = self.count << 1;
+                    tcp_response_set_data_len!(self, data_len + 3);
+                    // 2b unit and func
+                    self.response
+                        .extend(&self.buf[self.frame_start..self.frame_start + 2])?;
+                    if data_len > u16::from(u8::MAX) {
+                        return Err(ErrorKind::OOB);
+                    }
+                    #[allow(clippy::cast_possible_truncation)]
+                    // 1b data len
+                    self.response.push(data_len as u8)?;
+                }
+                Ok(())
+            }
+            MODBUS_READ_SLAVE_ID => {
+                // func 17
+                // read slave id
+                let data_len = self.count;
+                tcp_response_set_data_len!(self, data_len + 3);
+                // 2b unit and func
+                self.response
+                    .extend(&self.buf[self.frame_start..self.frame_start + 2])?;
+                if data_len > u16::from(u8::MAX) {
+                    return Err(ErrorKind::OOB);
+                }
+                Ok(())
+            }
+            MODBUS_READ_FILE_RECORD | MODBUS_WRITE_FILE_RECORD => {
+                // func 20 - 21
+                // read file record / write file record
+                let data_len = self.count;
+                tcp_response_set_data_len!(self, data_len + 3);
+                // 2b unit and func
+                self.response
+                    .extend(&self.buf[self.frame_start..self.frame_start + 2])?;
+                if data_len > u16::from(u8::MAX) {
+                    return Err(ErrorKind::OOB);
+                }
+                let result;
+                if self.func == MODBUS_READ_FILE_RECORD {
+                    result = ctx.get_file_record_as_u8(self.reg)
+                } else {
+                    result = ctx.set_file_record_as_u8(self.reg)
+                }
+                if let Err(e) = result {
+                    if e == ErrorKind::OOBContext {
+                        self.response.cut_end(5, 0);
+                        self.error = MODBUS_ERROR_ILLEGAL_DATA_ADDRESS;
+                        Ok(())
+                    } else {
+                        Err(e)
+                    }
+                } else {
+                    Ok(())
+                }
+            }
+            MODBUS_READ_DEVICE_ID => {
+                // func 43
+                // read device id
+                let data_len = self.count;
+                tcp_response_set_data_len!(self, data_len + 3);
+                // 2b unit and func
+                self.response
+                    .extend(&self.buf[self.frame_start..self.frame_start + 2])?;
+                if data_len > u16::from(u8::MAX) {
+                    return Err(ErrorKind::OOB);
+                }
+                Ok(())
+            }
+            MODBUS_PROTOBUF_FUNCTION => {
+                // func 0x6F
+                // read device id
+                let data_len = self.count;
+                tcp_response_set_data_len!(self, data_len + 3);
+                // 2b unit and func
+                self.response
+                    .extend(&self.buf[self.frame_start..self.frame_start + 2])?;
+                if data_len > u16::from(u8::MAX) {
+                    return Err(ErrorKind::OOB);
+                }
+                Ok(())
             }
             MODBUS_SET_COIL
             | MODBUS_SET_HOLDING

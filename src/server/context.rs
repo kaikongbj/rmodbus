@@ -218,4 +218,6 @@ pub trait ModbusContext {
 
     /// Set IEEE 754 f32 to two holding registers
     fn set_holdings_from_f32(&mut self, reg: u16, value: f32) -> Result<(), ErrorKind>;
+    fn get_file_record_as_u8(&self, reg: u16) -> Result<u8, ErrorKind>;
+    fn set_file_record_as_u8(&self, reg: u16) -> Result<u8, ErrorKind>;
 }
