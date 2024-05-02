@@ -40,7 +40,7 @@ I/O](https://docs.rs/roboplc/latest/roboplc/io/modbus/index.html) modules.
 Here is an example of a simple TCP blocking server:
 
 ```rust
-use std::io::{Read, Write};
+use std::io::{Read, write};
 use std::net::TcpListener;
 use std::thread;
 use std::sync::RwLock;
@@ -125,7 +125,7 @@ A simple PLC example:
 ```rust,no_run
 use std::error::Error;
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::{Read, write};
 
 use rmodbus::server::{storage::ModbusStorageFull, context::ModbusContext};
 
@@ -271,7 +271,7 @@ any source and with any required way.
 TCP client Example:
 
 ```rust,no_run
-use std::io::{Read, Write};
+use std::io::{Read, write};
 use std::net::TcpStream;
 use std::time::Duration;
 
