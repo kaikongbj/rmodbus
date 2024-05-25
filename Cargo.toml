@@ -28,6 +28,7 @@ serde = { version = "1.0", default-features = false, features = ["derive"], opti
 serde_arrays = { version = "0.1.0", optional = true }
 bincode = { version = "2.0.0-rc.2", optional = true }
 defmt = { version = "0.3.0", optional = true }
+tracing = { version = "0.1.40", default-features = false, features = ["attributes"] }
 
 [features]
 default = ["std"]
@@ -41,11 +42,11 @@ alloc = []
 defmt = ["dep:defmt"]
 
 [dev-dependencies]
-rand = "0.7.3"
+rand = "0.8.5"
 crc16 = "0.4.0"
 serial = "0.4.0"
 fixedvec = "0.2.4"
-spin = "0.5.2"
+spin = "0.9.8"
 bincode = "2.0.0-rc.2"
 once_cell = "1.19.0"
 
