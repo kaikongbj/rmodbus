@@ -220,4 +220,6 @@ pub trait ModbusContext {
     fn set_holdings_from_f32(&mut self, reg: u16, value: f32) -> Result<(), ErrorKind>;
     fn get_file_record_as_u8(&self, reg: u16) -> Result<u8, ErrorKind>;
     fn set_file_record_as_u8(&self, reg: u16) -> Result<u8, ErrorKind>;
+    fn get_device_id_as_u8(&self) -> Result<u8, ErrorKind>;
+    fn get_grpc_as_u8<V: VectorTrait<u8>>(&self, values: &[u8], result: &mut V) -> Result<u8, ErrorKind>;
 }

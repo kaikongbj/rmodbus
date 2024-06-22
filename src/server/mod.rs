@@ -489,6 +489,7 @@ impl<'a, V: VectorTrait<u8>> ModbusFrame<'a, V> {
                 let data_len = self.count;
                 tcp_response_set_data_len!(self, data_len + 3);
                 // 2b unit and func
+                let result = ctx.get_device_id_as_u8();
                 self.response
                     .extend(&self.buf[self.frame_start..self.frame_start + 2])?;
                 if data_len > u16::from(u8::MAX) {
@@ -502,12 +503,23 @@ impl<'a, V: VectorTrait<u8>> ModbusFrame<'a, V> {
                 let data_len = self.count;
                 tcp_response_set_data_len!(self, data_len + 3);
                 // 2b unit and func
-                self.response
-                    .extend(&self.buf[self.frame_start..self.frame_start + 2])?;
-                if data_len > u16::from(u8::MAX) {
-                    return Err(ErrorKind::OOB);
+                let result = ctx.get_grpc_as_u8(&self.buf[self.frame_start..self.frame_start + data_len as usize], self.response);
+                if let Err(e) = result {
+                    if e == ErrorKind::OOBContext {
+                        self.response.cut_end(5, 0);
+                        self.error = MODBUS_ERROR_ILLEGAL_DATA_ADDRESS;
+                        Ok(())
+                    } else {
+                        Err(e)
+                    }
+                } else {
+                    self.response
+                        .extend(&self.buf[self.frame_start..self.frame_start + 2])?;
+                    if data_len > u16::from(u8::MAX) {
+                        return Err(ErrorKind::OOB);
+                    }
+                    Ok(())
                 }
-                Ok(())
             }
             MODBUS_SET_COIL
             | MODBUS_SET_HOLDING
