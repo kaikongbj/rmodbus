@@ -5,8 +5,8 @@ use ieee754::Ieee754;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    context::ModbusContext,
     super::{ErrorKind, VectorTrait},
+    context::ModbusContext,
 };
 
 pub const SMALL_STORAGE_SIZE: usize = 1_000;
@@ -548,7 +548,11 @@ impl<const C: usize, const D: usize, const I: usize, const H: usize> ModbusConte
         todo!()
     }
 
-    fn get_grpc_as_u8<V: VectorTrait<u8>>(&self, values: &[u8], result: &mut V) -> Result<u8, ErrorKind> {
+    fn get_grpc_as_u8<V: VectorTrait<u8>>(
+        &self,
+        values: &[u8],
+        result: &mut V,
+    ) -> Result<u8, ErrorKind> {
         todo!()
     }
 }

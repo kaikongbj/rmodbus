@@ -1,8 +1,8 @@
 use core::slice;
 
-use crate::{calc_crc16, calc_lrc, ErrorKind, ModbusProto, VectorTrait};
 #[allow(clippy::wildcard_imports)]
 use crate::consts::*;
+use crate::{calc_crc16, calc_lrc, ErrorKind, ModbusProto, VectorTrait};
 
 pub mod context;
 pub mod storage;
@@ -129,7 +129,7 @@ impl<'a, V: VectorTrait<u8>> ModbusFrame<'a, V> {
                     return Err(ErrorKind::OOB);
                 }
                 #[allow(clippy::cast_possible_truncation)]
-                    let crc = calc_crc16(self.response.as_slice(), len as u8);
+                let crc = calc_crc16(self.response.as_slice(), len as u8);
                 self.response.extend(&crc.to_le_bytes())
             }
             ModbusProto::Ascii => {
@@ -138,7 +138,7 @@ impl<'a, V: VectorTrait<u8>> ModbusFrame<'a, V> {
                     return Err(ErrorKind::OOB);
                 }
                 #[allow(clippy::cast_possible_truncation)]
-                    let lrc = calc_lrc(self.response.as_slice(), len as u8);
+                let lrc = calc_lrc(self.response.as_slice(), len as u8);
                 self.response.push(lrc)
             }
             ModbusProto::TcpUdp => Ok(()),
@@ -503,7 +503,10 @@ impl<'a, V: VectorTrait<u8>> ModbusFrame<'a, V> {
                 let data_len = self.count;
                 tcp_response_set_data_len!(self, data_len + 3);
                 // 2b unit and func
-                let result = ctx.get_grpc_as_u8(&self.buf[self.frame_start..self.frame_start + data_len as usize], self.response);
+                let result = ctx.get_grpc_as_u8(
+                    &self.buf[self.frame_start..self.frame_start + data_len as usize],
+                    self.response,
+                );
                 if let Err(e) = result {
                     if e == ErrorKind::OOBContext {
                         self.response.cut_end(5, 0);
